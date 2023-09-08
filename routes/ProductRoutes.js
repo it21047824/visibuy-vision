@@ -89,7 +89,32 @@ router.route("/product").post(multermiddleware.fields([
 });
 
 //add product to product set
-router.route("/productset/product").post((req, res) => {});
+router.route("/productset/product").post(async (req, res) => {
+
+    const productSetId = req.body.productSetId;
+    const productIdList = req.body.productIdList;
+
+    let result = [];
+    let error;
+
+    for (let i = 0; i < productIdList.length; i++) {
+        const productId = productIdList[i];
+        await addProductToProductSet(productId, productSetId)
+            .then((response) => {
+                result.push(response);
+            })
+            .catch((err) => {
+                console.debug(err);
+                error = err;
+            });
+    }
+    
+    if (error) {
+        res.json(error);
+    } else {
+        res.json(result);
+    }
+});
 
 //update product
 //update product name
@@ -145,7 +170,19 @@ router.route("/productset/:productSetDisplayName").delete((req, res) => {
 });
 
 //delete product from product set
-router.route("/productset/product").delete((req, res) => {});
+router.route("/:productset/:product").delete(async (req, res) => {
+    //call deleteProductFromProductSet method
+    const productId = req.params.product;
+    const productSetId = req.params.productset;
+
+    await deleteProductFromProductSet(productId, productSetId)
+        .then((response) => {
+            res.json({message: response});
+        })
+        .catch((err) => {
+            res.json(err);
+        });
+});
 
 //get all product sets
 router.route("/productset").get(async (req, res) => {
@@ -171,7 +208,18 @@ router.route("/product").get((req, res) => {
 });
 
 //get all products in product set
-router.route("/productset/product").get((req, res) => {});
+router.route("/productset/:productSetId").get(async (req, res) => {
+    const productSetId = req.params.productSetId;
+
+    //call listProductsInProductSet method
+    await listProductsInProductSet(productSetId)
+        .then((response) => {
+            res.json(response);
+        })
+        .catch((err) => {
+            res.json(err);
+        });
+});
 
 //get all reference images of a product
 router.route("/product/:productID/referenceimage").get((req, res) => {
