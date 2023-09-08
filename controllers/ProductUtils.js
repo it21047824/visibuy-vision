@@ -81,8 +81,8 @@ const addProductToProductSet = async (productId, productSetId) => {
         product: client.productPath(projectId, location, productId),
     };
 
-    const [response] = await client.addProductToProductSet(request);
-    return response;
+    await client.addProductToProductSet(request);
+    return (productId);
 };
 
 //methods to update product
