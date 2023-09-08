@@ -5,10 +5,12 @@ const path = require('path');
 //constants
 const GOOGLE_KEY= path.join(__dirname, `./${process.env.GOOGLE_APPLICATION_CREDENTIALS}`);
 
-// Create a  new vision client
+// Create google vision client
 let visionClient;
-// Create a  new storage client
+// Create cloud storage client
 let storageClient;
+//create image annotator client
+let imageAnnotatorClient;
 
 const getVisionClient = () => {
     if (!visionClient) {
@@ -30,7 +32,18 @@ const getStorageClient = () => {
     return storageClient;
 };
 
+const getImageAnnotatorClient = () => {
+    if (!imageAnnotatorClient) {
+        imageAnnotatorClient = new vision.ImageAnnotatorClient({
+            keyFilename: GOOGLE_KEY,
+            projectId: process.env.GOOGLE_PROJECT_ID,
+        });
+    }
+    return imageAnnotatorClient;
+};
+
 module.exports = { 
     getVisionClient,
-    getStorageClient
+    getStorageClient,
+    getImageAnnotatorClient
  };
