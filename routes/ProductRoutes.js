@@ -62,11 +62,14 @@ router.route("/product").post(multermiddleware.fields([
     const productSize = product.size;
     const productPrice = product.price;
 
-    res.writeHead(200, { 
+    res.set({ 
         connection: "keep-alive",
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
-     });
+        "Access-Control-Allow-Origin": "*",
+    });
+
+    res.flushHeaders();
 
     res.write({ message: "Creating product" });
 
@@ -124,6 +127,8 @@ router.route("/product").post(multermiddleware.fields([
     const dbres = await axios.post(`${BASE_URL}/api/v1/products`, dbProduct)
 
     res.write({ message: "Product created successfully", complete:true });
+
+    res.end();
 })
 //update product
 .put(multermiddleware.fields([
@@ -145,11 +150,14 @@ router.route("/product").post(multermiddleware.fields([
     //update the product in vision product search
 
     try {
-        res.writeHead(200, {
+        res.set({
             connection: "keep-alive",
             "Content-Type": "text/event-stream",
             "Cache-Control": "no-cache",
+            "Access-Control-Allow-Origin": "*",
         });
+
+        res.flushHeaders();
 
         if(productDisplayName) {
         const res_name = await updateProductName(productId, productDisplayName);
@@ -210,6 +218,8 @@ router.route("/product").post(multermiddleware.fields([
     }
 
     res.write({ message: "Product updated successfully", complete:true });
+
+    res.end();
 });
 
 //add product to product set
