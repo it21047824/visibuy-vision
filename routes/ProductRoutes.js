@@ -71,7 +71,7 @@ router.route("/product").post(multermiddleware.fields([
 
     res.flushHeaders();
 
-    res.write({ message: "Creating product" });
+    res.write(JSON.stringify({ message: "Creating product" }));
 
     //create the product in vision product search
     const createdProduct = await createProduct(
@@ -87,7 +87,7 @@ router.route("/product").post(multermiddleware.fields([
     //upload images to cloud storage
     const images = req.files.images;
     
-    res.write({ message: "Uploading images" });
+    res.write(JSON.stringify({ message: "Uploading images" }));
     const imageUrls = [];
 
     for (let i = 0; i < images.length; i++) {
@@ -103,14 +103,14 @@ router.route("/product").post(multermiddleware.fields([
                     uri,
                     "IMG-" + file.originalname
                 );
-                if (res_img) res.write({ message: "image " + (i + 1) + " uploaded" });
+                if (res_img) res.write(JSON.stringify({ message: "image " + (i + 1) + " uploaded" }));
             })
             .catch((err) => {
                 console.log(err);
             });
     }
 
-    res.write({ message: "Saving product in DB" });
+    res.write(JSON.stringify({ message: "Saving product in DB" }));
 
     const dbProduct = {
         user: '641aaee2b8ed930c6e7186c1',
@@ -126,7 +126,7 @@ router.route("/product").post(multermiddleware.fields([
     //save product in DB
     const dbres = await axios.post(`${BASE_URL}/api/v1/products`, dbProduct)
 
-    res.write({ message: "Product created successfully", complete:true });
+    res.write(JSON.stringify({ message: "Product created successfully", complete:true }));
 
     res.end();
 })
@@ -161,7 +161,7 @@ router.route("/product").post(multermiddleware.fields([
 
         if(productDisplayName) {
         const res_name = await updateProductName(productId, productDisplayName);
-        if (res_name) res.write({ message: "name" });
+        if (res_name) res.write(JSON.stringify({ message: "name updated" }));
         }
 
         if(productCategory) {
@@ -169,7 +169,7 @@ router.route("/product").post(multermiddleware.fields([
             productId,
             productCategory
         );
-        if (res_category) res.write({ message: "category" });
+        if (res_category) res.write(JSON.stringify({ message: "category updated" }));
         }
 
         if (productDescription) {
@@ -177,7 +177,7 @@ router.route("/product").post(multermiddleware.fields([
             productId,
             productDescription
         );
-        if (res_desc) res.write({ message: "description" });
+        if (res_desc) res.write(JSON.stringify({ message: "description updated" }));
         }
 
         if (productColor || productSize || productPrice) {
@@ -187,18 +187,19 @@ router.route("/product").post(multermiddleware.fields([
             productSize,
             productPrice
         );
-        if (res_labels) res.write({ message: "labels" });
+        if (res_labels) res.write(JSON.stringify({ message: "labels updated" }));
         }
 
-        res.write({ message: "Product updated in vision product search" });
+        res.write(JSON.stringify({ message: "Saving product in DB" }));
     } catch (error) {
-        res.write({ error: error });
+        res.write(JSON.stringify({ message: "Error updating product", complete:true }));
+        res.end();
     }
 
     //upload images to cloud storage
     const images = req.files.images;
 
-    res.write({ message: "Uploading images" });
+    res.write(JSON.stringify({ message: "Uploading images" }));
 
     for (let i = 0; i < images.length; i++) {
         const file = images[i];
@@ -210,14 +211,14 @@ router.route("/product").post(multermiddleware.fields([
                     uri,
                     "IMG-" + file.originalname
                 );
-                if (res_img) res.write({ message: "image " + (i + 1) + " uploaded" });
+                if (res_img) res.write(JSON.stringify({ message: "image " + (i + 1) + " uploaded" }));
             })
             .catch((err) => {
                 console.log(err);
             });
     }
 
-    res.write({ message: "Product updated successfully", complete:true });
+    res.write(JSON.stringify({ message: "Product updated successfully", complete:true }));
 
     res.end();
 });
