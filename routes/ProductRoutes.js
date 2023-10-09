@@ -24,6 +24,7 @@ const router = require("express").Router();
 
 //constants
 const ID_PREFIX = "VP-";
+const BASE_URL = 'https://visibuyapp-e9453e5950ca.herokuapp.com'
 
 //create new product set
 router.route("/productset").post((req, res) => {
@@ -49,17 +50,25 @@ router.route("/product").post(multermiddleware.fields([
     {name: "product", maxCount: 1},
     {name: "images", maxCount: 10},
 ]), async (req, res) => {
-
-    const product = {...JSON.parse(req.body.product)};
+    const product = { ...JSON.parse(req.body.product) };
 
     //get product details
-    const productId = ID_PREFIX + String(product.name).replace(/\s/g, "-").toLowerCase();
+    const productId =
+        ID_PREFIX + String(product.name).replace(/\s/g, "-").toLowerCase();
     const productDisplayName = product.name;
     const productCategory = product.category;
     const productDescription = product.description;
     const productColor = product.color;
     const productSize = product.size;
     const productPrice = product.price;
+
+    res.writeHead(200, { 
+        connection: "keep-alive",
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+     });
+
+    res.write({ message: "Creating product" });
 
     //create the product in vision product search
     const createdProduct = await createProduct(
@@ -74,18 +83,133 @@ router.route("/product").post(multermiddleware.fields([
 
     //upload images to cloud storage
     const images = req.files.images;
+    
+    res.write({ message: "Uploading images" });
+    const imageUrls = [];
 
     for (let i = 0; i < images.length; i++) {
         const file = images[i];
-        await uploadFile(file).then(async (uri) => {
-            //link image to product
-            await addProductImage(productId, uri, "IMG-"+file.originalname);
-        }).catch((err) => {
-            console.log(err);
-        });
-    };
+        await uploadFile(file)
+            .then(async (uri) => {
+                //add to imageUrls
+                imageUrls.push(uri);
 
-    res.json({message: "Product created successfully"});
+                //link image to product
+                const res_img = await addProductImage(
+                    productId,
+                    uri,
+                    "IMG-" + file.originalname
+                );
+                if (res_img) res.write({ message: "image " + (i + 1) + " uploaded" });
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+    }
+
+    res.write({ message: "Saving product in DB" });
+
+    const dbProduct = {
+        user: '641aaee2b8ed930c6e7186c1',
+        name: createdProduct.displayName,
+        images: imageUrls.map((url) => {return {url: url}}),
+        category: productCategory,
+        brand: String(productDisplayName).split(" ")[0],
+        description: productDescription,
+        price: productPrice,
+        countInStock: 10,
+    }
+
+    //save product in DB
+    const dbres = await axios.post(`${BASE_URL}/api/v1/products`, dbProduct)
+
+    res.write({ message: "Product created successfully", complete:true });
+})
+//update product
+.put(multermiddleware.fields([
+    {name: "product", maxCount: 1},
+    {name: "images", maxCount: 10},
+]), async (req, res) => {
+    const product = { ...JSON.parse(req.body.product) };
+
+    //get product details
+    const productId =
+        ID_PREFIX + String(product.name).replace(/\s/g, "-").toLowerCase();
+    const productDisplayName = product.name;
+    const productCategory = product.category;
+    const productDescription = product.description;
+    const productColor = product.color;
+    const productSize = product.size;
+    const productPrice = product.price;
+
+    //update the product in vision product search
+
+    try {
+        res.writeHead(200, {
+            connection: "keep-alive",
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+        });
+
+        if(productDisplayName) {
+        const res_name = await updateProductName(productId, productDisplayName);
+        if (res_name) res.write({ message: "name" });
+        }
+
+        if(productCategory) {
+        const res_category = await updateProductCategory(
+            productId,
+            productCategory
+        );
+        if (res_category) res.write({ message: "category" });
+        }
+
+        if (productDescription) {
+        const res_desc = await updateProductDescription(
+            productId,
+            productDescription
+        );
+        if (res_desc) res.write({ message: "description" });
+        }
+
+        if (productColor || productSize || productPrice) {
+        const res_labels = await updateProductLabels(
+            productId,
+            productColor,
+            productSize,
+            productPrice
+        );
+        if (res_labels) res.write({ message: "labels" });
+        }
+
+        res.write({ message: "Product updated in vision product search" });
+    } catch (error) {
+        res.write({ error: error });
+    }
+
+    //upload images to cloud storage
+    const images = req.files.images;
+
+    res.write({ message: "Uploading images" });
+
+    for (let i = 0; i < images.length; i++) {
+        const file = images[i];
+        await uploadFile(file)
+            .then(async (uri) => {
+                //link image to product
+                const res_img = await addProductImage(
+                    productId,
+                    uri,
+                    "IMG-" + file.originalname
+                );
+                if (res_img) res.write({ message: "image " + (i + 1) + " uploaded" });
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+    }
+
+    res.write({ message: "Product updated successfully", complete:true });
 });
 
 //add product to product set
@@ -116,18 +240,18 @@ router.route("/productset/product").post(async (req, res) => {
     }
 });
 
-//update product
+
 //update product name
-router.route("/product/name").put((req, res) => {});
+// router.route("/product").put((req, res) => {});
 
 //update product category
-router.route("/product/category").put((req, res) => {});
+// router.route("/product/category").put((req, res) => {});
 
 //update product description
-router.route("/product/description").put((req, res) => {});
+// router.route("/product/description").put((req, res) => {});
 
 //update product labels
-router.route("/product/labels").put((req, res) => {});
+// router.route("/product/labels").put((req, res) => {});
 
 //delete product
 router.route("/product/:productName").delete(async (req, res) => {
