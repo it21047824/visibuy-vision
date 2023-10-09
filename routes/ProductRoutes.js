@@ -47,7 +47,8 @@ router.route("/productset").post((req, res) => {
 });
 
 //create new product
-router.route("/product").post(multermiddleware.fields([
+router.route("/product")
+.post(multermiddleware.fields([
     {name: "product", maxCount: 1},
     {name: "images", maxCount: 10},
 ]), async (req, res) => {
@@ -63,17 +64,6 @@ router.route("/product").post(multermiddleware.fields([
     const productSize = product.size;
     const productPrice = product.price;
 
-    res.set({ 
-        connection: "keep-alive",
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        "Access-Control-Allow-Origin": "*",
-    });
-
-    res.flushHeaders();
-
-    res.write(JSON.stringify({ message: "Creating product" }));
-
     //create the product in vision product search
     const createdProduct = await createProduct(
         productId,
@@ -88,7 +78,6 @@ router.route("/product").post(multermiddleware.fields([
     //upload images to cloud storage
     const images = req.files.images;
     
-    res.write(JSON.stringify({ message: "Uploading images" }));
     const imageUrls = [];
 
     for (let i = 0; i < images.length; i++) {
@@ -104,14 +93,11 @@ router.route("/product").post(multermiddleware.fields([
                     uri,
                     "IMG-" + file.originalname
                 );
-                if (res_img) res.write(JSON.stringify({ message: "image " + (i + 1) + " uploaded" }));
             })
             .catch((err) => {
                 console.log(err);
             });
     }
-
-    res.write(JSON.stringify({ message: "Saving product in DB" }));
 
     const dbProduct = {
         user: '641aaee2b8ed930c6e7186c1',
@@ -127,9 +113,9 @@ router.route("/product").post(multermiddleware.fields([
     //save product in DB
     const dbres = await axios.post(`${BASE_URL}/api/v1/products`, dbProduct)
 
-    res.write(JSON.stringify({ message: "Product created successfully", complete:true }));
-
-    res.end();
+    if (dbres.data) {
+        res.json({message: "Product added successfully"});
+    }
 })
 //update product
 .put(multermiddleware.fields([
@@ -151,18 +137,9 @@ router.route("/product").post(multermiddleware.fields([
     //update the product in vision product search
 
     try {
-        res.set({
-            connection: "keep-alive",
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            "Access-Control-Allow-Origin": "*",
-        });
-
-        res.flushHeaders();
 
         if(productDisplayName) {
         const res_name = await updateProductName(productId, productDisplayName);
-        if (res_name) res.write(JSON.stringify({ message: "name updated" }));
         }
 
         if(productCategory) {
@@ -170,7 +147,6 @@ router.route("/product").post(multermiddleware.fields([
             productId,
             productCategory
         );
-        if (res_category) res.write(JSON.stringify({ message: "category updated" }));
         }
 
         if (productDescription) {
@@ -178,7 +154,6 @@ router.route("/product").post(multermiddleware.fields([
             productId,
             productDescription
         );
-        if (res_desc) res.write(JSON.stringify({ message: "description updated" }));
         }
 
         if (productColor || productSize || productPrice) {
@@ -188,19 +163,14 @@ router.route("/product").post(multermiddleware.fields([
             productSize,
             productPrice
         );
-        if (res_labels) res.write(JSON.stringify({ message: "labels updated" }));
         }
 
-        res.write(JSON.stringify({ message: "Saving product in DB" }));
     } catch (error) {
-        res.write(JSON.stringify({ message: "Error updating product", complete:true }));
-        res.end();
+        res.json({error: error});
     }
 
     //upload images to cloud storage
     const images = req.files.images;
-
-    res.write(JSON.stringify({ message: "Uploading images" }));
 
     for (let i = 0; i < images.length; i++) {
         const file = images[i];
@@ -212,16 +182,13 @@ router.route("/product").post(multermiddleware.fields([
                     uri,
                     "IMG-" + file.originalname
                 );
-                if (res_img) res.write(JSON.stringify({ message: "image " + (i + 1) + " uploaded" }));
             })
             .catch((err) => {
                 console.log(err);
             });
     }
 
-    res.write(JSON.stringify({ message: "Product updated successfully", complete:true }));
-
-    res.end();
+    res.json({message: "Product updated successfully"});
 });
 
 //add product to product set
