@@ -137,55 +137,58 @@ router.route("/product")
     //update the product in vision product search
 
     try {
-
-        if(productDisplayName) {
-        const res_name = await updateProductName(productId, productDisplayName);
+        if (productDisplayName) {
+            const res_name = await updateProductName(
+                productId,
+                productDisplayName
+            );
         }
 
-        if(productCategory) {
-        const res_category = await updateProductCategory(
-            productId,
-            productCategory
-        );
+        if (productCategory) {
+            const res_category = await updateProductCategory(
+                productId,
+                productCategory
+            );
         }
 
         if (productDescription) {
-        const res_desc = await updateProductDescription(
-            productId,
-            productDescription
-        );
+            const res_desc = await updateProductDescription(
+                productId,
+                productDescription
+            );
         }
 
         if (productColor || productSize || productPrice) {
-        const res_labels = await updateProductLabels(
-            productId,
-            productColor,
-            productSize,
-            productPrice
-        );
+            const res_labels = await updateProductLabels(
+                productId,
+                productColor,
+                productSize,
+                productPrice
+            );
         }
 
+        if (req.files?.images?.length > 0) {
+            //upload images to cloud storage
+            const images = req.files.images;
+
+            for (let i = 0; i < images.length; i++) {
+                const file = images[i];
+                await uploadFile(file)
+                    .then(async (uri) => {
+                        //link image to product
+                        const res_img = await addProductImage(
+                            productId,
+                            uri,
+                            "IMG-" + file.originalname
+                        );
+                    })
+                    .catch((err) => {
+                        console.log(err);
+                    });
+            }
+        }
     } catch (error) {
-        res.json({error: error});
-    }
-
-    //upload images to cloud storage
-    const images = req.files.images;
-
-    for (let i = 0; i < images.length; i++) {
-        const file = images[i];
-        await uploadFile(file)
-            .then(async (uri) => {
-                //link image to product
-                const res_img = await addProductImage(
-                    productId,
-                    uri,
-                    "IMG-" + file.originalname
-                );
-            })
-            .catch((err) => {
-                console.log(err);
-            });
+        res.json({ error: error });
     }
 
     res.json({message: "Product updated successfully"});
