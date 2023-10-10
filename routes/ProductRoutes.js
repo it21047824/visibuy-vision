@@ -131,7 +131,6 @@ router.route("/product")
     //get product details
     const productId =
         ID_PREFIX + String(product.name).replace(/\s/g, "-").toLowerCase();
-    const productDisplayName = product.name;
     const productCategory = product.category;
     const productDescription = product.description;
     const productColor = product.color;
@@ -141,13 +140,6 @@ router.route("/product")
     //update the product in vision product search
 
     try {
-        if (productDisplayName) {
-            const res_name = await updateProductName(
-                productId,
-                productDisplayName
-            );
-        }
-
         if (productCategory) {
             const res_category = await updateProductCategory(
                 productId,
@@ -191,6 +183,7 @@ router.route("/product")
                     });
             }
         }
+
         res.json({message: "Product updated successfully"});
     } catch (error) {
         res.json({ error: error });
