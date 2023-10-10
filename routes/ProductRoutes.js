@@ -187,11 +187,10 @@ router.route("/product")
                     });
             }
         }
+        res.json({message: "Product updated successfully"});
     } catch (error) {
         res.json({ error: error });
     }
-
-    res.json({message: "Product updated successfully"});
 });
 
 //add product to product set
