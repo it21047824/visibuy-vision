@@ -64,57 +64,61 @@ router.route("/product")
     const productSize = product.size;
     const productPrice = product.price;
 
-    //create the product in vision product search
-    const createdProduct = await createProduct(
-        productId,
-        productDisplayName,
-        productCategory,
-        productDescription,
-        productColor,
-        productSize,
-        productPrice
-    );
-
-    //upload images to cloud storage
-    const images = req.files.images;
+    try {
+        //create the product in vision product search
+        const createdProduct = await createProduct(
+            productId,
+            productDisplayName,
+            productCategory,
+            productDescription,
+            productColor,
+            productSize,
+            productPrice
+        );
     
-    const imageUrls = [];
+        //upload images to cloud storage
+        const images = req.files.images;
+        
+        const imageUrls = [];
+    
+        for (let i = 0; i < images.length; i++) {
+            const file = images[i];
+            await uploadFile(file)
+                .then(async (uri) => {
+                    //add to imageUrls
+                    imageUrls.push(uri);
+    
+                    //link image to product
+                    const res_img = await addProductImage(
+                        productId,
+                        uri,
+                        "IMG-" + file.originalname
+                    );
+                })
+                .catch((err) => {
+                    console.log(err);
+                });
+        }
 
-    for (let i = 0; i < images.length; i++) {
-        const file = images[i];
-        await uploadFile(file)
-            .then(async (uri) => {
-                //add to imageUrls
-                imageUrls.push(uri);
-
-                //link image to product
-                const res_img = await addProductImage(
-                    productId,
-                    uri,
-                    "IMG-" + file.originalname
-                );
-            })
-            .catch((err) => {
-                console.log(err);
-            });
-    }
-
-    const dbProduct = {
-        user: '641aaee2b8ed930c6e7186c1',
-        name: createdProduct.displayName,
-        images: imageUrls.map((url) => {return {url: url}}),
-        category: productCategory,
-        brand: String(productDisplayName).split(" ")[0],
-        description: productDescription,
-        price: productPrice,
-        countInStock: 10,
-    }
-
-    //save product in DB
-    const dbres = await axios.post(`${BASE_URL}/api/v1/products`, dbProduct)
-
-    if (dbres.data) {
-        res.json({message: "Product added successfully"});
+        const dbProduct = {
+            user: '641aaee2b8ed930c6e7186c1',
+            name: createdProduct.displayName,
+            images: imageUrls.map((url) => {return {url: url}}),
+            category: productCategory,
+            brand: String(productDisplayName).split(" ")[0],
+            description: productDescription,
+            price: productPrice,
+            countInStock: 10,
+        }
+    
+        //save product in DB
+        const dbres = await axios.post(`${BASE_URL}/api/v1/products`, dbProduct)
+        if (dbres) {
+            res.json({message: "Product created successfully"});
+        }
+    
+    } catch (error) {
+        res.json({ error: error });
     }
 })
 //update product
